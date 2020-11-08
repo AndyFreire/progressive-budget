@@ -8,7 +8,6 @@ fetch("/api/transaction")
   .then(data => {
     // save db data on global variable
     transactions = data;
-
     populateTotal();
     populateTable();
     populateChart();
@@ -16,21 +15,21 @@ fetch("/api/transaction")
 
 function populateTotal() {
   // reduce transaction amounts to a single total value
-  let total = transactions.reduce((total, t) => {
+  const total = transactions.reduce((total, t) => {
     return total + parseInt(t.value);
   }, 0);
 
-  let totalEl = document.querySelector("#total");
+  const totalEl = document.querySelector("#total");
   totalEl.textContent = total;
 }
 
 function populateTable() {
-  let tbody = document.querySelector("#tbody");
+  const tbody = document.querySelector("#tbody");
   tbody.innerHTML = "";
 
   transactions.forEach(transaction => {
     // create and populate a table row
-    let tr = document.createElement("tr");
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${transaction.name}</td>
       <td>${transaction.value}</td>
@@ -42,17 +41,17 @@ function populateTable() {
 
 function populateChart() {
   // copy array and reverse it
-  let reversed = transactions.slice().reverse();
+  const reversed = transactions.slice().reverse();
   let sum = 0;
 
   // create date labels for chart
-  let labels = reversed.map(t => {
-    let date = new Date(t.date);
+  const labels = reversed.map(t => {
+    const date = new Date(t.date);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   });
 
   // create incremental values for chart
-  let data = reversed.map(t => {
+  const data = reversed.map(t => {
     sum += parseInt(t.value);
     return sum;
   });
@@ -62,18 +61,20 @@ function populateChart() {
     myChart.destroy();
   }
 
-  let ctx = document.getElementById("myChart").getContext("2d");
+  const ctx = document.getElementById("myChart").getContext("2d");
 
   myChart = new Chart(ctx, {
-    type: 'line',
-      data: {
-        labels,
-        datasets: [{
-            label: "Total Over Time",
-            fill: true,
-            backgroundColor: "#6666ff",
-            data
-        }]
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Total Over Time",
+          fill: true,
+          backgroundColor: "#6666ff",
+          data
+        }
+      ]
     }
   });
 }
@@ -144,71 +145,12 @@ function sendTransaction(isAdding) {
   });
 }
 
-// create a new db request for a "budget" database.
-const request = window.indexedDB.open("budget", 1);
-
-request.onsuccess = function (event) {
-  db = event.target.result;
-
-  if (navigator.onLine) {
-    checkDatabase();
-  }
-};
-
-request.onerror = function (event) {
-  // log error here
-};
-
-function checkDatabase() {
-  // open a transaction on your pending db
-  const transaction = db.transaction(["pending"], "readwrite");
-  // access your pending object store
-  const pendingStore = transaction.objectStore("pending");
-  // get all records from store and set to a variable
-  const getAll = pendingStore.getAll(); 
-
-  getAll.onsuccess = function () {
-    if (getAll.result.length > 0) {
-      fetch('/api/transaction/bulk', {
-        method: 'POST',
-        body: JSON.stringify(getAll.result),
-        headers: {
-          Accept: 'application/json, text/plain, */*',
-          'Content-Type': 'application/json',
-        },
-      })
-        .then((response) => response.json())
-        .then(() => {
-          // if successful, open a transaction on your pending db
-          const transaction = db.transaction(["pending"], "readwrite");
-          // access your pending object store
-          const pendingStore = transaction.objectStore("pending");
-          // clear all items in your store
-          pendingStore.clear();
-        });
-    }
-  };
-}
-
-// listen for app coming back online
-window.addEventListener('online', checkDatabase);
-
-
-
-
-function saveRecord(record) {
-  // create a transaction on the pending db with readwrite access
-  const transaction = db.transaction(["pending"], "readwrite");
-  // access your pending object store
-  const pendingStore = transaction.objectStore("pending");
-  // add record to your store with add method.
-  pendingStore.add(record);
-}
-
 document.querySelector("#add-btn").onclick = function() {
+  event.preventDefault()
   sendTransaction(true);
 };
 
 document.querySelector("#sub-btn").onclick = function() {
+  event.preventDefault()
   sendTransaction(false);
 };
